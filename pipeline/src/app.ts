@@ -34,6 +34,16 @@ const makeFolder = (path: string) => {
   fs.mkdirSync(path)
 }
 
+
+  const copyFiles = (files: string[], inputPath: string, outputPath: string)=>{
+    files.forEach((file)=>{
+      fs.copyFileSync(
+        path.join(`${inputPath}`, file),
+        path.join(`${outputPath}`, file)
+      )
+    })
+  }
+
 const app = async()=>{
   try {
     const msg = " WELCOME TEAM ! ";
@@ -61,9 +71,26 @@ const app = async()=>{
   
     const serviceName = validateService(res.service)
     const appPath = __dirname
-    const rootPath = path.resolve(appPath, "../..")
+    const pipeLinePath = path.resolve(appPath, "../")
+    const rootPath = path.resolve(appPath, "../../")
     const servicePath = path.join(rootPath, serviceName)
+    const srcPath = path.join(servicePath, "src")
+    const appFilePath = path.join(srcPath, "app.ts")
+    const fileListForCopy = [
+      ".env",
+      "Dockerfile",
+      "package.json",
+      "tsconfig.json",
+      ".gitignore",
+      "example.env",
+    ]
+
     makeFolder(servicePath)
+    makeFolder(srcPath)
+
+    fs.writeFileSync(appFilePath, "")
+
+    copyFiles(fileListForCopy, pipeLinePath, servicePath)
     
     console.log(
       `\n${chalk.green('✨')} ${chalk.white.bold('Generation Complete')}\n` +
@@ -72,6 +99,7 @@ const app = async()=>{
       `${chalk.gray('└──')} ${chalk.green.bold('Status:')}   ${chalk.cyan('Created Successfully')}\n` +
       `${chalk.gray('└──')} ${chalk.green.bold('Time:')}     ${chalk.gray(new Date().toLocaleTimeString())}\n`
     );
+
     exitApp()
 
   } 
