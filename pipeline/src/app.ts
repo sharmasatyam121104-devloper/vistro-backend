@@ -35,14 +35,22 @@ const makeFolder = (path: string) => {
 }
 
 
-  const copyFiles = (files: string[], inputPath: string, outputPath: string)=>{
-    files.forEach((file)=>{
-      fs.copyFileSync(
-        path.join(`${inputPath}`, file),
-        path.join(`${outputPath}`, file)
-      )
-    })
-  }
+const copyFiles = (files: string[], inputPath: string, outputPath: string)=>{
+  files.forEach((file)=>{
+    fs.copyFileSync(
+      path.join(`${inputPath}`, file),
+      path.join(`${outputPath}`, file)
+    )
+  })
+}
+
+const createFiles = (files: string[], serviceName: string, srcPath: string)=>{
+  files.forEach((file)=>{
+    const fileName = `${serviceName}${file}`
+    const filePath = path.join(srcPath, fileName)
+    fs.writeFileSync(filePath, "")
+  })
+}
 
 const app = async()=>{
   try {
@@ -85,12 +93,24 @@ const app = async()=>{
       "example.env",
     ]
 
+    const filesListForCreate = [
+      ".controller.ts",
+      ".service.ts",
+      ".interface.ts",
+      ".enum.ts",
+      ".middleware.ts",
+      ".dto.ts",
+      ".router.ts"
+    ]
+
     makeFolder(servicePath)
     makeFolder(srcPath)
 
     fs.writeFileSync(appFilePath, "")
 
     copyFiles(fileListForCopy, pipeLinePath, servicePath)
+
+    createFiles(filesListForCreate, serviceName, srcPath)
     
     console.log(
       `\n${chalk.green('✨')} ${chalk.white.bold('Generation Complete')}\n` +
