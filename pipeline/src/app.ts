@@ -100,6 +100,11 @@ const createEnvForNewService = (pipeLinePath: string, servicePath: string) => {
       const [key] = line.split("=")
       return `${key.trim()} = ${lastPort}`
     }
+
+    if (line.trim().startsWith("SERVER")) {
+      return line.replace(/:\d+/, `:${lastPort}`)
+    }
+
     return line
   })
 
