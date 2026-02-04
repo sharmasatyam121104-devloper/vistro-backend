@@ -52,6 +52,61 @@ const createFiles = (files: string[], serviceName: string, srcPath: string)=>{
   })
 }
 
+const updateLastPort = (pipeLinePath: string)=>{
+  const envFilePath = path.join(pipeLinePath, ".env")
+  const envData = fs.readFileSync(envFilePath, "utf-8")
+  let lines = envData.split("\n")
+
+  lines = lines.map(line => {
+
+    if (line.trim().startsWith("LAST_PORT")) {
+      const [key, value] = line.split("=")
+      const newPort = parseInt(value.trim()) + 1
+      return `${key.trim()} = ${newPort}`
+    }
+
+    return line
+  })
+
+  fs.writeFileSync(envFilePath, lines.join("\n"), "utf-8")
+}
+
+
+
+const createEnvForNewService = (pipeLinePath: string, servicePath: string) => {
+  const envFilePath = path.join(pipeLinePath, ".env")
+  const serviceEnvPath = path.join(servicePath, ".env")
+
+  const envData = fs.readFileSync(envFilePath, "utf-8")
+  let lines = envData.split("\n")
+
+  let lastPort: string | null = null
+
+  lines = lines.filter(line => {
+    if (line.trim().startsWith("LAST_PORT")) {
+      const [, value] = line.split("=")
+      lastPort = value.trim()
+      return false
+    }
+    return true
+  })
+
+  if (!lastPort) {
+    throw new Error("LAST_PORT not found in pipeline .env file")
+  }
+
+  lines = lines.map(line => {
+    if (line.trim().startsWith("PORT")) {
+      const [key] = line.split("=")
+      return `${key.trim()} = ${lastPort}`
+    }
+    return line
+  })
+
+  fs.writeFileSync(serviceEnvPath, lines.join("\n"), "utf-8")
+}
+
+
 const app = async()=>{
   try {
     const msg = " WELCOME TEAM ! ";
@@ -85,7 +140,6 @@ const app = async()=>{
     const srcPath = path.join(servicePath, "src")
     const appFilePath = path.join(srcPath, "app.ts")
     const fileListForCopy = [
-      ".env",
       "Dockerfile",
       "package.json",
       "tsconfig.json",
@@ -107,6 +161,9 @@ const app = async()=>{
     makeFolder(srcPath)
 
     fs.writeFileSync(appFilePath, "")
+
+    updateLastPort(pipeLinePath)
+    createEnvForNewService(pipeLinePath, servicePath)
 
     copyFiles(fileListForCopy, pipeLinePath, servicePath)
 
