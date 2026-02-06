@@ -1,8 +1,18 @@
 import chalk from 'chalk';
 import prompts from 'prompts';
+import dotenv from 'dotenv'
+dotenv.config()
 import fs from 'fs';
 import path from 'path';
+import { exec } from "child_process";
+import { appCode, interfaceCode, modelCode, routerCode } from "./utils/boilerPlate"
+import { startLoader } from './utils/loader';
 
+/*
+ * Check service name entered by user
+ * - should not be empty
+ * - only letters, numbers and "-" allowed
+*/
 const validateService = (service: string)=>{
   if(!service || service.length === 0) {
     throw new Error('Service name is required!')
@@ -15,9 +25,11 @@ const validateService = (service: string)=>{
     throw new Error('Service name must not contain spaces or symbols (only "-" allowed).')
   }
 
+  // convert service name to lowercase
   return service.toLowerCase()
 }
 
+// *Exit the app with a message
 const exitApp = (message: string | null = null) => {
   console.log('\n' + chalk.red('─'.repeat(40)));
   console.log(`${chalk.bgRed.white.bold(' EXIT ')} ${chalk.red(message || 'Process terminated by user.')}`);
@@ -25,6 +37,10 @@ const exitApp = (message: string | null = null) => {
   process.exit(0); 
 };
 
+/*
+ * Create a folder
+ * Throw error if folder already exists
+*/
 const makeFolder = (path: string) => {
   const isFolderExist = fs.existsSync(path)
   if(isFolderExist) {
@@ -35,6 +51,8 @@ const makeFolder = (path: string) => {
 }
 
 
+// * Copy files from pipeline folder to service folder
+ 
 const copyFiles = (files: string[], inputPath: string, outputPath: string)=>{
   files.forEach((file)=>{
     fs.copyFileSync(
@@ -44,14 +62,32 @@ const copyFiles = (files: string[], inputPath: string, outputPath: string)=>{
   })
 }
 
+const getBoilerPlateFileData = (file: string, serviceName: string) => {
+  if (file.endsWith("router.ts")) {
+    return routerCode(serviceName)
+  }
+
+  if (file.endsWith("model.ts")) {
+    return modelCode(serviceName)
+  }
+
+  if (file.endsWith("interface.ts")) {
+    return interfaceCode(serviceName)
+  }
+  
+  return ""
+}
+
+// *Create empty files inside src folder
 const createFiles = (files: string[], serviceName: string, srcPath: string)=>{
   files.forEach((file)=>{
     const fileName = `${serviceName}${file}`
     const filePath = path.join(srcPath, fileName)
-    fs.writeFileSync(filePath, "")
+    fs.writeFileSync(filePath, getBoilerPlateFileData(file, serviceName))
   })
 }
 
+// * Increase LAST_PORT value in pipeline .env file
 const updateLastPort = (pipeLinePath: string)=>{
   const envFilePath = path.join(pipeLinePath, ".env")
   const envData = fs.readFileSync(envFilePath, "utf-8")
@@ -72,7 +108,8 @@ const updateLastPort = (pipeLinePath: string)=>{
 }
 
 
-
+//  * Create .env file for new service
+//  * Use LAST_PORT as PORT
 const createEnvForNewService = (pipeLinePath: string, servicePath: string) => {
   const envFilePath = path.join(pipeLinePath, ".env")
   const serviceEnvPath = path.join(servicePath, ".env")
@@ -111,6 +148,21 @@ const createEnvForNewService = (pipeLinePath: string, servicePath: string) => {
   fs.writeFileSync(serviceEnvPath, lines.join("\n"), "utf-8")
 }
 
+const createDockerFileForService = (pipelinePath: string, servicePath: string, newPort: number) => {
+  const pipelineDockerFilePath = path.join(pipelinePath, "Dockerfile")
+  const newDockerFilePath = path.join(servicePath, "Dockerfile")
+
+  const dockerFileData = fs.readFileSync(pipelineDockerFilePath, "utf-8")
+
+  const replacedWithDocker = dockerFileData.replace(
+    /EXPOSE\s*\d+/,
+    `EXPOSE ${newPort}`
+  )
+
+  fs.writeFileSync(newDockerFilePath, replacedWithDocker)
+  console.log(fs.readFileSync(newDockerFilePath).toString());
+}
+
 
 const app = async()=>{
   try {
@@ -121,6 +173,7 @@ const app = async()=>{
     console.log(chalk.blue("║") + chalk.bgBlue.white.bold(msg) + chalk.blue("║"));
     console.log(chalk.blue(`╚${line}╝`));
   
+    // Ask user for service name
     const res = await prompts({
       type: 'text',
       name: 'service',
@@ -136,22 +189,26 @@ const app = async()=>{
       exitApp("Pipeline name is not allowed !")
     }
 
-  
+    // validate service name 
     const serviceName = validateService(res.service)
+
+    // set all required paths
     const appPath = __dirname
     const pipeLinePath = path.resolve(appPath, "../")
     const rootPath = path.resolve(appPath, "../../")
     const servicePath = path.join(rootPath, serviceName)
     const srcPath = path.join(servicePath, "src")
     const appFilePath = path.join(srcPath, "app.ts")
+
+    // files to copy from pipeline
     const fileListForCopy = [
-      "Dockerfile",
       "package.json",
       "tsconfig.json",
       ".gitignore",
       "example.env",
     ]
 
+    // files to create in src folder
     const filesListForCreate = [
       ".controller.ts",
       ".service.ts",
@@ -159,19 +216,30 @@ const app = async()=>{
       ".enum.ts",
       ".middleware.ts",
       ".dto.ts",
-      ".router.ts"
+      ".router.ts",
+      ".model.ts"
     ]
 
+    // create folders
     makeFolder(servicePath)
     makeFolder(srcPath)
 
-    fs.writeFileSync(appFilePath, "")
+    // create empty app.ts
+    fs.writeFileSync(appFilePath, appCode(serviceName))
 
+    // update port and create env file
     updateLastPort(pipeLinePath)
     createEnvForNewService(pipeLinePath, servicePath)
 
+    // update port and crete new docker file
+    const lastPort = parseInt(process.env.LAST_PORT!)
+    const newPort = lastPort+1
+    createDockerFileForService(pipeLinePath, servicePath, newPort);
+
+    // copy config files
     copyFiles(fileListForCopy, pipeLinePath, servicePath)
 
+    // create src files
     createFiles(filesListForCreate, serviceName, srcPath)
     
     console.log(
@@ -182,7 +250,51 @@ const app = async()=>{
       `${chalk.gray('└──')} ${chalk.green.bold('Time:')}     ${chalk.gray(new Date().toLocaleTimeString())}\n`
     );
 
-    exitApp()
+
+    console.log(chalk.cyan.bold("\n ⚡ SYSTEM UPDATE "));
+    console.log(chalk.black.bgCyan(" PHASE ") + chalk.cyan(" ❯ Synchronizing Packages..."));
+    console.log(chalk.dim(" ———————————————————————————————————— "));
+
+    startLoader()
+
+      console.log(
+        chalk.bgWhite.black.bold(" AUTHOR ") + 
+        chalk.bgHex('#6272a4').white.bold(" Satyam Sharma ") + 
+        chalk.cyan(" ❯❯ ") + 
+        chalk.hex('#12c2e9').underline("https://github.com/sharmasatyam121104-devloper")
+      );
+
+    exec("npm install", {cwd: servicePath}, (err)=>{
+      if(err && err instanceof Error)
+      {
+        throw new Error(`Failed during dependency installation - ${err.message}`)
+      }
+
+      console.log("\n"); 
+      const line = "━".repeat(serviceName.length + 50);
+      console.log(chalk.yellow(line));
+      console.log(
+        chalk.yellow("  ✨ ") + 
+        chalk.bold.white(serviceName.toUpperCase()) + 
+        chalk.green(" dependency install  successfully! 🛰️")
+      );
+      console.log(chalk.yellow(line));
+
+      // --- NEXT STEPS SECTION ---
+      console.log("\n" + chalk.cyan.bold("  👉 NEXT STEPS:"));
+      
+      console.log(
+        chalk.white("  1. Go back  : ") + chalk.bold.magenta("cd ..")
+      );
+      console.log(
+        chalk.white("  2. Enter Dir: ") + chalk.bold.magenta(`cd ${serviceName}`)
+      );
+      console.log(
+        chalk.white("  3. Launch   : ") + chalk.bold.bgHex('#FF8C00').black(" npm run dev ")
+      );
+      
+      exitApp()
+    })
 
   } 
   catch (error) {
