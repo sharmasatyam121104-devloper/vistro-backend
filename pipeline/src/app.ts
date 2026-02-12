@@ -160,7 +160,23 @@ const createDockerFileForService = (pipelinePath: string, servicePath: string, n
   )
 
   fs.writeFileSync(newDockerFilePath, replacedWithDocker)
-  console.log(fs.readFileSync(newDockerFilePath).toString());
+}
+
+const ceratePackageDotJsonFileForService = (pipeLinePath: string, servicePath: string, serviceName: string)=>{
+  const sourcePath = 'package.json'
+  const destinationPath = path.join(servicePath, 'package.json')
+
+  let packageJsonRaw = fs.readFileSync(sourcePath, "utf-8")
+  const packageJson = JSON.parse(packageJsonRaw);
+
+  packageJson.name = serviceName;
+
+  packageJson.scripts = {
+    ...packageJson.scripts,
+    dev: "ts-node-dev --respawn --transpile-only src/app.ts",
+  };
+
+  fs.writeFileSync(destinationPath, JSON.stringify(packageJson, null, 2), "utf-8")
 }
 
 
@@ -202,7 +218,6 @@ const app = async()=>{
 
     // files to copy from pipeline
     const fileListForCopy = [
-      "package.json",
       "tsconfig.json",
       ".gitignore",
       "example.env",
@@ -230,6 +245,9 @@ const app = async()=>{
     // update port and create env file
     updateLastPort(pipeLinePath)
     createEnvForNewService(pipeLinePath, servicePath)
+
+    //crete Packages.json file
+    ceratePackageDotJsonFileForService(pipeLinePath, servicePath, serviceName)
 
     // update port and crete new docker file
     const lastPort = parseInt(process.env.LAST_PORT!)
