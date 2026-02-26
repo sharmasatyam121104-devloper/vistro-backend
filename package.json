@@ -1,0 +1,41 @@
+{
+  "name": "gateway",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "install-all": "ts-node-dev --transpile-only src/install-all.ts",
+    "uninstall-all": "ts-node-dev --transpile-only src/uninstall-all.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "concurrently": "^9.2.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.5",
+    "micro-service-maker": "^1.1.6",
+    "moment": "^2.30.1",
+    "mongoose": "^9.1.5",
+    "morgan": "^1.10.1",
+    "prompts": "^2.4.2",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^25.2.3",
+    "@types/prompts": "^2.4.9",
+    "ts-node-dev": "^2.0.0",
+    "typescipt": "^1.0.0"
+  }
+}
