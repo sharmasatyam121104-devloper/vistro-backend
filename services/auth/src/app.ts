@@ -13,7 +13,7 @@ mongoose.connect(DB_URI)
 .then(() => {
   console.log(
     chalk.bold.green("[ DATABASE ] ") + 
-    chalk.white("auth        ") + 
+    chalk.white("auth    ") + 
     chalk.gray(" | ") + 
     chalk.bgGreen.black.bold(" OK ") + 
     chalk.green(" Connected Successfully")
@@ -32,6 +32,7 @@ mongoose.connect(DB_URI)
 import express, { Request, Response } from 'express'
 import cookieParser from 'cookie-parser'
 import AuthRouter from './auth.router'
+
 import cors from 'cors'
 
 const PORT = process.env.PORT || 5000;
@@ -48,7 +49,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 
-app.use("/auth", AuthRouter)
+app.use("/", AuthRouter)
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello from auth service!");

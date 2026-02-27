@@ -6,3 +6,12 @@ export interface AuthInterface extends Document {
     refreshToken: string,
     refreshTokenExpiredAt: Date,
 }
+
+export interface MessageInterface {
+    message: string
+}
+
+export interface VerifyOtpInterface extends MessageInterface {
+    accessToken: string
+    refreshToken: string
+}
