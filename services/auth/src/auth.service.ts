@@ -35,23 +35,42 @@ const getAccessToken = async (auth: AuthInterface): Promise<string> => {
     return token
 }
 
-export const sendOtp = async(body: any):Promise<MessageInterface> =>{
-    const authPayload = {
-        mobile: body.mobile,
-        refreshToken: uuid(),
-        refreshTokenExpiredAt: moment().add(1, 'M').toDate()
+export const signup = async(body: any):Promise<MessageInterface> =>{
+
+    const {email, mobile} = body
+    const isUserExists = await AuthModel.findOne({
+        $or: [
+            {email},
+            {mobile}
+        ]
+    })
+
+    if (isUserExists) {
+        throw new Error("User already exists")
     }
+    await AuthModel.create(body)
+    await sendOtp(mobile)
+    return {message:"OTP has been sent to your mobile number for signup verification."}
+}
 
-    await AuthModel.findOneAndUpdate({mobile: body.mobile}, {$set: authPayload}, {upsert: true, new: true})
+export const sendOtp = async (mobile: string): Promise<MessageInterface> => {
 
-    //this is disable 
-    // const {data} = await axios.post(`/otp?otp_expiry=10&template_id=${process.env.OTP_TEMPLATE_ID}&mobile=${body.mobile}&authkey=${process.env.MSG_AUTH_KEY}`)
-    
-    // if(data.type !== "success") {
-    //     throw new Error("Failed to send OTP")
-    // }
+  const authPayload = {
+    refreshToken: uuid(),
+    refreshTokenExpiredAt: moment().add(1, "month").toDate()
+  }
 
-    return {message: "OTP send successfully.!"}
+  const updatedUser = await AuthModel.findOneAndUpdate(
+    { mobile },
+    { $set: authPayload },
+    { new: true }
+  )
+
+  if (!updatedUser) {
+    throw new Error("User not found")
+  }
+
+  return { message: "OTP sent successfully!" }
 }
 
 

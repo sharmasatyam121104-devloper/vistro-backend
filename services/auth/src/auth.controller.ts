@@ -1,6 +1,19 @@
 import { Request, Response } from "express"
 import * as authService from './auth.service.js'
 
+export const signup = async(req: Request, res: Response)=>{
+    try {
+        const body = req.body
+        const auth = await authService.signup(body)
+        res.json(auth)
+    } 
+    catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({message: error.message})
+        }
+    }
+}
+
 export const sendOtp = async(req: Request, res: Response)=>{
     try {
         const auth =  await authService.sendOtp(req.body)
