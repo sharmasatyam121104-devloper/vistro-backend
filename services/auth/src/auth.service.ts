@@ -12,8 +12,10 @@ axios.defaults.baseURL = process.env.MSG_SERVER
 const getAccessToken = async (auth: AuthInterface): Promise<string> => {
 
     const payload = {
-    id: auth._id,
-    mobile: auth.mobile,
+        id: auth._id,
+        mobile: auth.mobile,
+        email: auth.email,
+        fullname: auth.fullname
     }
 
     const secret = process.env.AUTH_SECRET

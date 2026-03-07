@@ -33,6 +33,7 @@ import express, { Request, Response } from 'express'
 import VideoRouter from './video.router'
 import morgan from 'morgan'
 import cors from 'cors'
+import cookieParser from 'cookie-parser';
 
 const PORT = process.env.PORT || 5000;
 const app = express()
@@ -46,10 +47,8 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
+app.use(cookieParser())
 
-app.use("/video", VideoRouter)
+app.use("/", VideoRouter)
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Hello from video service!");
-});
 
