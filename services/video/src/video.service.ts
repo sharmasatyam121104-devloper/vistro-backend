@@ -16,20 +16,22 @@ const s3 = new S3Client({
     }
 })
 
-const genrateSignedUrlForUpload = async(userId: string)=>{
-    const fileName = crypto.randomBytes(8).toString("hex")
+const genrateSignedUrlForUpload = async(path: string)=>{
     const cmd = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME!,
-        Key: `originals/${userId}/${fileName}.mp4`
+        Key: path
     })
     const url = await getSignedUrl(s3, cmd, {expiresIn: FIFTEEN_MINUTE})
     return url
 }
 
 export const createVideo = async(userId: string ,body: CreateVideoDto): Promise<{uploadUrl: string, video: VideoInterface}>=>{
+    const fileName = crypto.randomBytes(8).toString("hex")
+    const path = `originals/${userId}/${fileName}.mp4`
+    body.path = path
     let user = new Types.ObjectId(userId)
         const [uploadUrl, video] = await Promise.all([
-            genrateSignedUrlForUpload(userId),
+            genrateSignedUrlForUpload(path),
             VideoModel.create({...body, user})
         ])
     return {uploadUrl ,video}
@@ -44,6 +46,7 @@ export const fetchVideo = async (userId: string, page: number, limit: number): P
             .skip(skip)
             .limit(limit)
             .sort({createdAt: -1})
+            .lean()
         ])
 
     return {total, data:videos}

@@ -27,8 +27,9 @@ export const fetchVideo = async (req: AuthRequest, res: Response)=>{
             return null
         }
 
-        const page = Number(req.params.page) || 1
-        const limit = Number(req.params.limt) || 12
+        const page = Number(req.query.page) || 1
+        const limit = Number(req.query.limit) || 12
+
 
         const video = await videoService.fetchVideo(userId, page, limit)
         res.json(video)
@@ -37,5 +38,18 @@ export const fetchVideo = async (req: AuthRequest, res: Response)=>{
         if(error instanceof Error) {
             res.status(200).json({message: error.message})
         }    
+    }
+}
+
+
+export const videoTranscodingWebhook = async (req: Request, res: Response)=>{
+    try {
+        const video = await videoService.videoTranscodingWebhook(req.body)
+        res.json(video)
+    }
+    catch(err)
+    {
+        if(err instanceof Error)
+            res.status(200).json({message: err.message})
     }
 }

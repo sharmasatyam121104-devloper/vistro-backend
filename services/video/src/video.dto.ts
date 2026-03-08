@@ -5,7 +5,7 @@ export const createVideoDtoSchema = z.object({
   description: z.string().optional(),
   size: z.number().gte(0),
   duration: z.number().gte(0),
-  path: z.string().min(1, "Path is required"),
+  path: z.string().optional(),
 }).strict()
 
 export type CreateVideoDto = z.infer<typeof createVideoDtoSchema>

@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import { NextFunction } from "http-proxy-middleware/dist/types"
+import crypto from 'crypto'
 
 import axios from "axios"
 import { AuthRequest } from "./video.interface"
@@ -47,5 +48,22 @@ export const AuthMiddleware = async(req: AuthRequest, res: Response, next: NextF
         if(error instanceof Error) {
             res.status(200).json({message: error.message})
         }      
+    }
+}
+
+export const WebhookGuardMiddleware = (req: Request, res: Response, next: NextFunction)=>{
+    try {
+        const lambdaSignature = req.headers['x-api-signature']
+        const payload = JSON.stringify(req.body);
+        const signature = crypto.createHmac('sha256', process.env.WEBHOOK_SECRET!).update(payload).digest('hex') 
+
+        if(lambdaSignature !== signature)
+            throw new Error("Unauthorizes")
+
+        next()
+    }
+    catch(err)
+    {
+        res.status(401).json({message: 'Unauthorized'})
     }
 }
