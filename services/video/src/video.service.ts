@@ -16,10 +16,14 @@ const s3 = new S3Client({
     }
 })
 
-const genrateSignedUrlForUpload = async(path: string)=>{
+const genrateSignedUrlForUpload = async(path: string, userId: string, videoId: string)=>{
     const cmd = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME!,
-        Key: path
+        Key: path,
+        Metadata: {
+            user_id: userId,
+            video_id: videoId
+        }
     })
     const url = await getSignedUrl(s3, cmd, {expiresIn: FIFTEEN_MINUTE})
     return url
@@ -30,10 +34,10 @@ export const createVideo = async(userId: string ,body: CreateVideoDto): Promise<
     const path = `originals/${userId}/${fileName}.mp4`
     body.path = path
     let user = new Types.ObjectId(userId)
-        const [uploadUrl, video] = await Promise.all([
-            genrateSignedUrlForUpload(path),
-            VideoModel.create({...body, user})
-        ])
+
+    const video = await VideoModel.create({...body, user})
+    const uploadUrl = await genrateSignedUrlForUpload(path, userId, video._id.toString())
+
     return {uploadUrl ,video}
 }
 
@@ -52,8 +56,27 @@ export const fetchVideo = async (userId: string, page: number, limit: number): P
     return {total, data:videos}
 }
 
-export const videoTranscodingWebhook = (body: any)=>{
-    console.log("Request recived from lambda");
-    fs.writeFileSync("video.json", JSON.stringify(body, null, 2))
-    return {message: 'success'}
+const getVideoStatus = (status: string) => {
+    if (status === "PROGRESSING") {
+        return "converting";
+    }
+
+    if (status === "CANCELED" || status === "ERROR") {
+        return "failed";
+    }
+
+    if (status === "COMPLETE") {
+        return "published";
+    }
+}
+
+export const videoTranscodingWebhook = async(body: any)=>{
+    const videoId = body.userMetadata.video_id
+    const status  = getVideoStatus(body.status)
+    const video = await VideoModel.findByIdAndUpdate(videoId, {status}, {new: true})
+    if(!video) {
+        throw new Error("Failed to find video id")
+    }
+
+    return {message: "Video upddated."}
 }

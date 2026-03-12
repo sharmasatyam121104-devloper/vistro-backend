@@ -1,5 +1,5 @@
 export enum VideoStatusEnum {
     draft = "draft",
-    progressing = "progressing",
+    converting = "converting",
     published = "published",
 }

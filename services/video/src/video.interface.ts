@@ -4,6 +4,7 @@ import { VideoStatusEnum } from "./video.enum";
 import { Request } from "express";
 
 export interface VideoInterface extends Document {
+    _id: Types.ObjectId
     user: Types.ObjectId
     title: string
     description: string

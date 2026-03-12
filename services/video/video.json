@@ -1,0 +1,51 @@
+{
+  "timestamp": 1773293752836,
+  "accountId": "911084782212",
+  "queue": "arn:aws:mediaconvert:ap-southeast-1:911084782212:queues/Default",
+  "jobId": "1773293730781-bfs398",
+  "status": "COMPLETE",
+  "userMetadata": {
+    "user_id": "69aace7c36d67c5e004f3da1",
+    "video_id": "69b2509e713e47f706c2845f"
+  },
+  "outputGroupDetails": [
+    {
+      "outputDetails": [
+        {
+          "outputFilePaths": [
+            "s3://vistro-server/streams/69aace7c36d67c5e004f3da1/19f63c9c8a0cca1f/19f63c9c8a0cca1f_1080.m3u8"
+          ],
+          "durationInMs": 11011,
+          "videoDetails": {
+            "widthInPx": 1920,
+            "heightInPx": 1080,
+            "averageBitrate": 5891027
+          }
+        },
+        {
+          "outputFilePaths": [
+            "s3://vistro-server/streams/69aace7c36d67c5e004f3da1/19f63c9c8a0cca1f/19f63c9c8a0cca1f_720.m3u8"
+          ],
+          "durationInMs": 11011,
+          "videoDetails": {
+            "widthInPx": 1280,
+            "heightInPx": 720,
+            "averageBitrate": 3452291
+          }
+        }
+      ],
+      "playlistFilePaths": [
+        "s3://vistro-server/streams/69aace7c36d67c5e004f3da1/19f63c9c8a0cca1f/19f63c9c8a0cca1f.m3u8"
+      ],
+      "type": "HLS_GROUP"
+    }
+  ],
+  "paddingInserted": 0,
+  "blackVideoDetected": 0,
+  "warnings": [
+    {
+      "code": 240000,
+      "count": 1
+    }
+  ]
+}
