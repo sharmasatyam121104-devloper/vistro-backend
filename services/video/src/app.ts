@@ -29,7 +29,8 @@ mongoose.connect(DB_URI)
   );
 });
 
-import express, { Request, Response } from 'express'
+import "./video.worker"
+import express from 'express'
 import VideoRouter from './video.router'
 import morgan from 'morgan'
 import cors from 'cors'

@@ -1,4 +1,5 @@
 import fs from 'fs'
+import path from 'path'
 import VideoModel from './video.model';
 import { PaginationInterface, VideoInterface } from './video.interface';
 import { CreateVideoDto } from './video.dto';
@@ -7,7 +8,9 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from "crypto";
 import Redis from 'ioredis'
-const publisher = new Redis()
+import { webhookQ } from './video.queue';
+import {getSignedUrl as cloudSigner} from "@aws-sdk/cloudfront-signer"
+import moment from 'moment';
 
 const FIFTEEN_MINUTE = 900
 const s3 = new S3Client({
@@ -34,7 +37,8 @@ const genrateSignedUrlForUpload = async(path: string, userId: string, videoId: s
 export const createVideo = async(userId: string ,body: CreateVideoDto): Promise<{uploadUrl: string, video: VideoInterface}>=>{
     const fileName = crypto.randomBytes(8).toString("hex")
     const path = `originals/${userId}/${fileName}.mp4`
-    body.path = path
+    const streamPath = `streams/${userId}/${fileName}/${fileName}.m3u8`
+    body.path = streamPath
     let user = new Types.ObjectId(userId)
 
     const video = await VideoModel.create({...body, user})
@@ -75,12 +79,41 @@ const getVideoStatus = (status: string) => {
 export const videoTranscodingWebhook = async(body: any)=>{
     const videoId = body.userMetadata.video_id
     const status  = getVideoStatus(body.status)
-    const video = await VideoModel.findByIdAndUpdate(videoId, {status}, {new: true})
-    if(!video) {
-        throw new Error("Failed to find video id")
+    const options = {
+        removeOnComplete: true,
+        removeOnFailed: true,
+        removeOnFail: true,
+        attempts: 3,
+        backoff: {
+            type: 'exponential',
+            delay: 5000
+        }
     }
+    webhookQ.add("update-status", {videoId, status}, options)
+    return {message: "Video status added to queue."}
+}
 
-    await publisher.publish("video-transcoding", JSON.stringify(video))
 
-    return {message: "Video upddated."}
+export const upadteVideoStatus = async(videoId: string, status: string)=>{
+    await VideoModel.updateOne({_id: videoId}, {status})
+    return {message: "Video status upddated."}
+}
+
+const genrateCloudfrontSignedUrl = (streamPath: string)=>{
+    const root = process.cwd()
+    const privateFilePath = path.join(root, "private.pem")
+    const key = fs.readFileSync(privateFilePath, "utf-8")
+    const url = cloudSigner({
+        url: `${process.env.CDN}/${streamPath}`,
+        keyPairId: process.env.CDN_ID as string,
+        dateLessThan: moment().add(60, "minutes").toISOString(),
+        privateKey: key
+    })
+
+    return url
+}
+
+export const getVideoStreamUrl = (body: any)=>{
+    const url = genrateCloudfrontSignedUrl(body.path)
+    return {url}
 }
