@@ -6,6 +6,8 @@ import { Types } from 'mongoose';
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from "crypto";
+import Redis from 'ioredis'
+const publisher = new Redis()
 
 const FIFTEEN_MINUTE = 900
 const s3 = new S3Client({
@@ -77,6 +79,8 @@ export const videoTranscodingWebhook = async(body: any)=>{
     if(!video) {
         throw new Error("Failed to find video id")
     }
+
+    await publisher.publish("video-transcoding", JSON.stringify(video))
 
     return {message: "Video upddated."}
 }
