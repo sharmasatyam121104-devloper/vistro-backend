@@ -46,7 +46,7 @@ export const AuthMiddleware = async(req: AuthRequest, res: Response, next: NextF
     } 
     catch (error) {
         if(error instanceof Error) {
-            res.status(200).json({message: error.message})
+            res.status(500).json({message: error.message})
         }      
     }
 }
