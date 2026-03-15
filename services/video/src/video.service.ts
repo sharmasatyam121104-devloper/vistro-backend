@@ -4,10 +4,9 @@ import VideoModel from './video.model';
 import { PaginationInterface, VideoInterface } from './video.interface';
 import { CreateVideoDto } from './video.dto';
 import { Types } from 'mongoose';
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
+import { ObjectCannedACL, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from "crypto";
-import Redis from 'ioredis'
 import { webhookQ } from './video.queue';
 import {getSignedUrl as cloudSigner} from "@aws-sdk/cloudfront-signer"
 import moment from 'moment';
@@ -21,14 +20,15 @@ const s3 = new S3Client({
     }
 })
 
-const genrateSignedUrlForUpload = async(path: string, userId: string, videoId: string)=>{
+const genrateSignedUrlForUpload = async(path: string, userId: string, videoId: string, acl: ObjectCannedACL = "private")=>{
     const cmd = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME!,
         Key: path,
         Metadata: {
             user_id: userId,
             video_id: videoId
-        }
+        },
+        ACL: acl
     })
     const url = await getSignedUrl(s3, cmd, {expiresIn: FIFTEEN_MINUTE})
     return url
@@ -116,4 +116,32 @@ const genrateCloudfrontSignedUrl = (streamPath: string)=>{
 export const getVideoStreamUrl = (body: any)=>{
     const url = genrateCloudfrontSignedUrl(body.path)
     return {url}
+}
+
+export const cretaeThumbnail = async(userId: string, body: any)=>{
+    const fileName = crypto.randomBytes(8).toString("hex")
+    const path = `thumbnails/${userId}/${fileName}.png`
+
+    const uploadUrl = await genrateSignedUrlForUpload(path, userId, body.videoId, "public-read")
+    
+    const payload: {
+        thumbnail: {
+            high: {
+                path: string
+                width: number
+                height: number
+            }
+        }
+    } = {
+        thumbnail: {
+            high: {
+                path,
+                width: 1280,
+                height: 720
+            }
+        }
+    }
+    await VideoModel.findByIdAndUpdate(body.videoId, payload)
+
+    return {uploadUrl}
 }

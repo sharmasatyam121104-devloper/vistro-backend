@@ -3,6 +3,24 @@ import { Document,  Types } from "mongoose";
 import { VideoStatusEnum } from "./video.enum";
 import { Request } from "express";
 
+export interface ThumbnailInterface {
+    high?: {
+        path: string,
+        width: number,
+        height: number,
+    },
+    medium?: {
+        path: string,
+        width: number,
+        height: number,
+    },
+    low?: {
+        path: string,
+        width: number,
+        height: number,
+    },
+}
+
 export interface VideoInterface extends Document {
     _id: Types.ObjectId
     user: Types.ObjectId
@@ -12,6 +30,7 @@ export interface VideoInterface extends Document {
     duration: number
     path: string
     status: VideoStatusEnum
+    thumbnail: ThumbnailInterface
 }
 
 export interface AuthRequest extends Request{

@@ -33,6 +33,23 @@ const videoSchema = new Schema<VideoInterface>(
       type: String,
       enum: Object.values(VideoStatusEnum),
       default: VideoStatusEnum.draft
+    },
+    thumbnail: {
+      high: {
+        path: String,
+        width: Number,
+        height: Number
+      },
+      medium: {
+        path: String,
+        width: Number,
+        height: Number
+      },
+      low: {
+        path: String,
+        width: Number,
+        height: Number
+      }
     }
 
   },

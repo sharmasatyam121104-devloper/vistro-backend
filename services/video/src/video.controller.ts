@@ -65,3 +65,20 @@ export const getVideoStreamUrl = async (req: Request, res: Response)=>{
             res.status(200).json({message: err.message})
     }
 }
+
+export const createThumbanil = async (req: AuthRequest, res: Response)=>{
+    try {
+        const userId = req.user?.id
+        if(!userId) {
+            return null
+        }
+
+        const thumbnails = await videoService.cretaeThumbnail(userId, req.body)
+        res.json(thumbnails)
+    } 
+    catch (error) {
+        if(error instanceof Error) {
+            res.status(200).json({message: error.message})
+        }    
+    }
+}
