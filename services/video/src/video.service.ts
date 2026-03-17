@@ -93,6 +93,20 @@ export const videoTranscodingWebhook = async(body: any)=>{
     return {message: "Video status added to queue."}
 }
 
+export const thumbnailWebhook = async(body: any)=>{
+    const videoId = body.video_id
+    // const userId = body.user_id
+    const sizes = body.sizes
+    const payload = {
+        $set: {
+            "thumbnail.medium": sizes.medium,
+            "thumbnail.low": sizes.low,
+        }
+    }
+    await VideoModel.findByIdAndUpdate(videoId,payload)
+    return {message: "Thumbanail updete"}
+}
+
 
 export const upadteVideoStatus = async(videoId: string, status: string)=>{
     await VideoModel.updateOne({_id: videoId}, {status})

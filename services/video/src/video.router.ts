@@ -1,6 +1,6 @@
 
 import { Router} from 'express'
-import { createThumbanil, createVideo, fetchVideo, getVideoStreamUrl, videoTranscodingWebhook } from './video.controller'
+import { createThumbanil, createVideo, fetchVideo, getVideoStreamUrl, thumbnailWebhook, videoTranscodingWebhook } from './video.controller'
 import { AuthMiddleware, DtoMiddleware, WebhookGuardMiddleware } from './video.middleware'
 import { createVideoDtoSchema } from './video.dto'
 
@@ -13,5 +13,6 @@ VideoRouter.post('/stream', getVideoStreamUrl)
 
 
 VideoRouter.post("/webhook/transcoding", WebhookGuardMiddleware, videoTranscodingWebhook)
+VideoRouter.post("/webhook/thumbnail",  thumbnailWebhook)
 
 export default VideoRouter

@@ -54,6 +54,18 @@ export const videoTranscodingWebhook = async (req: Request, res: Response)=>{
     }
 }
 
+export const thumbnailWebhook = async (req: Request, res: Response)=>{
+    try {
+        const video = await videoService.thumbnailWebhook(req.body)
+        res.json(video)
+    }
+    catch(err)
+    {
+        if(err instanceof Error)
+            res.status(200).json({message: err.message})
+    }
+}
+
 export const getVideoStreamUrl = async (req: Request, res: Response)=>{
     try {
         const stream = await videoService.getVideoStreamUrl(req.body)
